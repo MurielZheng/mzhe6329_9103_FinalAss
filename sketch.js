@@ -16,6 +16,10 @@ function preload() {
 function setup() {
   // Create a canvas with a specified size of 1000x1000
   createCanvas(size, size);
+  // Create a new FFT analysis object
+  fft = new p5.FFT();
+  // Add the song (sample) into the FFT's input
+  song.connect(fft);
   // Generate random color array of size 500
   for (let i = 0; i < 500; i++) {
     let r = random(0, 255);
@@ -115,7 +119,7 @@ function drawCircle(x, y, index, mapMid, scaleTreble, mapMid) {
   }
   // Draw the stamen in the middle of every two circles
   if (index % 2 === 0) {
-    rotate(Math.PI * 2 / 30 * index);
+    rotate(Math.PI * 2 / 30 * index + mapMid / 10);
     drawPetal(150)
   }
   pop()
