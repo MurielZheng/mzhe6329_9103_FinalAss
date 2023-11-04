@@ -9,6 +9,8 @@ let radius = size * 0.25;
 
 // The sound track for the visualizer
 let song;
+let fft;
+let mic;
 
 // Predefined color palette for the visual elements
 let palette = [
@@ -18,87 +20,89 @@ let palette = [
   '#C0D6DF', '#E5FCC2', '#9DE0AD', '#45ADA8', '#547980'
 ];
 
-// Function to preload necessary assets
+// Function to preload audio assets
 function preload() {
-  song = loadSound("Noel.mp3"); // Specify the URL of your audio file
+  song = loadSound("Noel.mp3");
 }
 
-// Setup function to initialize the canvas and FFT object
+/// Setup function to initialize the canvas and audio analysis tools
 function setup() {
-  createCanvas(size, size); // Set up a canvas of 1000x1000 pixels
-  fft = new p5.FFT(); // Create an FFT analysis object
-  song.connect(fft); // Connect the song to the FFT object for analysis
+  createCanvas(size, size);
+  fft = new p5.FFT();
+  mic = new p5.AudioIn();
+  mic.start();
+  fft.setInput(song);
 
-  // Initialize color array with random colors from the palette
+  /// Populate arrays with random values
   for (let i = 0; i < 500; i++) {
-    let colorIndex = floor(random(palette.length));
-    let col = palette[colorIndex];
-    colors.push(col);
+    colors.push(palette[floor(random(palette.length))]);
     deviations.push(random(-6, 6));
   }
 
-  // Generate staggered grid of coordinates for circle placement
+  // Generate grid for visual element placement
   for (let i = 0; i < 6; i++) {
-    let diff = i % 2 === 0 ? 0 : radius / 2; // Stagger every other row
+    let diff = i % 2 === 0 ? 0 : radius / 2;
     for (let j = 0; j < 6; j++) {
       coordinates.push([radius * j + j * 20 + diff, radius * i - i * 10]);
     }
   }
 }
 
-// Draw function runs in a loop to render visual elements on canvas
+// Render loop for the visuals
 function draw() {
-  // Prompt user to interact if audio context is not running
-  if (getAudioContext().state !== 'running') {
-    background(220);
-    text('Tap here to play sound!', 10, 20, width - 20);
-    return; // Exit the draw loop until interaction begins
+  if (getAudioContext().state !== 'running' || !mic.enabled) {
+    displayStartInstructions();
+    return;
   }
 
-  // Transformation and background setup
+  if (song.isPlaying()) {
+    background(3, 79, 129); // Playing background color
+  } else {
+    background(50); // Paused background color
+  }
+
+  // Rotate and translate for visual transformation
   rotate(-PI / 11);
   translate(-350, -100);
-  background(3, 79, 120); // Dark blue background
 
-  // Analyze the frequency spectrum of the audio
   let spectrum = fft.analyze();
+  let bass = fft.getEnergy(100, 150);
+  let treble = fft.getEnergy(150, 250);
+  let mid = fft.getEnergy("mid");
 
-  // Extract and map frequencies to visual properties
-  var bass = fft.getEnergy(100, 150);
-  var treble = fft.getEnergy(150, 250);
-  var mid = fft.getEnergy("mid");
+  // Map frequency energies to visual properties
+  let mapMid = map(mid, 0, 255, -100, 200);
+  let scaleMid = map(mid, 0, 255, 1, 1.5);
+  let mapTreble = map(treble, 0, 255, 200, 350);
+  let scaleTreble = map(treble, 0, 255, 0, 1);
+  let mapBass = map(bass, 0, 255, 50, 200);
+  let scaleBass = map(bass, 0, 255, 0.05, 1.2);
 
-  var mapMid = map(mid, 0, 255, -100, 200);
-  var scaleMid = map(mid, 0, 255, 1, 1.5);
-
-  var mapTreble = map(treble, 0, 255, 200, 350);
-  var scaleTreble = map(treble, 0, 255, 0, 1);
-
-  var mapbass = map(bass, 0, 255, 50, 200);
-  var scalebass = map(bass, 0, 255, 0.05, 1.2);
-
-  // Mouse position mapping for additional interaction
-  mapMouseX = map(mouseX, 0, width, 1, 50);
-  mapMouseXbass = map(mouseX, 0, width, 1, 5);
-  mapMouseY = map(mouseY, 0, height, 2, 6);
-
-  // Draw each circle according to the grid of coordinates
+  // Draw circles influenced by the audio
   for (let i = 0; i < coordinates.length; i++) {
-    drawCircle(coordinates[i][0], coordinates[i][1], i, mapbass, scaleTreble, mapMid);
+    drawCircle(coordinates[i][0], coordinates[i][1], i, mapBass, scaleTreble, mapMid);
   }
 }
 
-/*
-* Draw circle
-* x: the position of the horizontal coordinate axis
-* y: the position of the vertical coordinate axis
-* index: index of the current circle in the array
-*/
+// Display instructions to start audio
+function displayStartInstructions() {
+  background(50);
+  fill(255);
+  textSize(32);
+  textAlign(CENTER, CENTER);
+  text('Click to start the audio', width / 2, height / 2 - 50);
+  textSize(16);
+  text('The visualizer will react to the music!', width / 2, height / 2);
+  textSize(12);
+  text('(Ensure "Noel.mp3" is in the project directory)', width / 2, height / 2 + 20);
+}
+
+// Function to draw an individual circle with audio-reactive visual elements
 function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
   push();
 
   // Use a smoother transition for the circle's size change, with a minimum and maximum size
-  let minDiameter = radius * 0.8;
+  let minDiameter = radius * 0.75;
   let maxDiameter = radius * 1.5;
   let bassDiameterChange = map(mapbass, 0, 255, 0, radius * 0.5);
   let bassDiameter = constrain(minDiameter + bassDiameterChange, minDiameter, maxDiameter);
@@ -126,7 +130,7 @@ function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
     // Draw dashed circle
     for (let i = 0; i < 4; i++) {
       stroke(color(colors[index * 10 + 10]));
-      dashedCircle(75 + i * (radius - 180) / 5 + scaleTreble * 50, 2, 4);
+      dashedCircle(75 + i * (radius - 180) / 5 + scaleTreble * 30, 2, 4);
     }
   }
   // Draw the stamen in the middle of every two circles
@@ -137,12 +141,7 @@ function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
   pop()
 }
 
-/*
-* Draw dashed circle
-* radius: radius size of a circle
-* dashWidth: dash width size
-* dashSpacing: spacing between dashed line segments
-*/
+// Function to draw a dashed circle
 function dashedCircle(radius, dashWidth, dashSpacing) {
   // 200 dashed line segments
   let steps = 200;
@@ -170,10 +169,7 @@ function dashedCircle(radius, dashWidth, dashSpacing) {
   }
 }
 
-/*
-* Draw serration line circle
-* color: color of line
-*/
+// Function to draw a line with serration effect
 function circleLine(color) {
   stroke(color)
   strokeWeight(3);
@@ -196,10 +192,7 @@ function circleLine(color) {
   }
 }
 
-/*
-* Draw stamen line of circle
-* currentRadius: radius size of a circle
-*/
+// Function to draw a stamen-like line within the circle
 function drawPetal(currentRadius) {
   const ratio = 3
   // draw bezier line by calc result
@@ -213,14 +206,33 @@ function drawPetal(currentRadius) {
   bezier(0, 0, -currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius);
 }
 
-// Toggle playback on or off with a mouse click
+// Toggle between playing the song and listening to the microphone
 function mousePressed() {
   if (song.isPlaying()) {
-    // .isPlaying() returns a boolean
     song.stop();
-    background(255, 0, 0);
+    mic.start();
+    fft.setInput(mic);
+    displayPlaybackMode("Microphone", false);
   } else {
+    if (getAudioContext().state !== 'running') {
+      userStartAudio();
+    }
+    mic.stop();
     song.play();
-    background(0, 255, 0);
+    fft.setInput(song);
+    displayPlaybackMode("Song", true);
   }
+}
+
+// Function to display the current playback mode on the canvas
+function displayPlaybackMode(mode, isPlaying) {
+  // Set background color based on whether the song is playing
+  let bgColor = isPlaying ? [3, 79, 129] : [50, 50, 50];
+  background(bgColor);
+
+  fill(255); // White text for visibility
+  textSize(16);
+  textAlign(CENTER, BOTTOM);
+  let modeText = mode === "Microphone" ? "Listening to the Microphone" : "Playing the Song";
+  text(`Mode: ${modeText}`, width / 2, height - 30);
 }
