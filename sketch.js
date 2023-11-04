@@ -9,8 +9,12 @@ let radius = size * 0.25;
 
 // The sound track for the visualizer
 let song;
+let uploadedSong;
 let fft;
 let mic;
+
+// Input for audio file upload
+let fileInput;
 
 // Predefined color palette for the visual elements
 let palette = [
@@ -46,6 +50,10 @@ function setup() {
       coordinates.push([radius * j + j * 20 + diff, radius * i - i * 10]);
     }
   }
+
+  // Create a file input button for audio files
+  fileInput = createFileInput(handleFile);
+  fileInput.position(10, height + 10);
 }
 
 // Render loop for the visuals
@@ -206,10 +214,34 @@ function drawPetal(currentRadius) {
   bezier(0, 0, -currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius);
 }
 
-// Toggle between playing the song and listening to the microphone
+/// Function to handle the uploaded file
+function handleFile(file) {
+  if (file.type === 'audio') {
+    if (uploadedSong) {
+      uploadedSong.stop();
+    }
+    uploadedSong = loadSound(file.data, () => {
+      if (song.isPlaying()) {
+        song.stop();
+      }
+      mic.stop();
+      uploadedSong.play();
+      fft.setInput(uploadedSong);
+    });
+  } else {
+    console.error("This file type is not supported.");
+  }
+}
+
+// Adjust the mousePressed function to accommodate the uploaded audio
 function mousePressed() {
   if (song.isPlaying()) {
     song.stop();
+    mic.start();
+    fft.setInput(mic);
+    displayPlaybackMode("Microphone", false);
+  } else if (uploadedSong && uploadedSong.isPlaying()) {
+    uploadedSong.stop();
     mic.start();
     fft.setInput(mic);
     displayPlaybackMode("Microphone", false);
@@ -217,10 +249,17 @@ function mousePressed() {
     if (getAudioContext().state !== 'running') {
       userStartAudio();
     }
-    mic.stop();
-    song.play();
-    fft.setInput(song);
-    displayPlaybackMode("Song", true);
+    if (uploadedSong) {
+      mic.stop();
+      uploadedSong.play();
+      fft.setInput(uploadedSong);
+      displayPlaybackMode("Uploaded Song", true);
+    } else {
+      mic.stop();
+      song.play();
+      fft.setInput(song);
+      displayPlaybackMode("Song", true);
+    }
   }
 }
 
@@ -229,10 +268,21 @@ function displayPlaybackMode(mode, isPlaying) {
   // Set background color based on whether the song is playing
   let bgColor = isPlaying ? [3, 79, 129] : [50, 50, 50];
   background(bgColor);
-
+  textFont("Lato");
   fill(255); // White text for visibility
-  textSize(16);
+  textSize(17);
   textAlign(CENTER, BOTTOM);
-  let modeText = mode === "Microphone" ? "Listening to the Microphone" : "Playing the Song";
+  let modeText;
+  switch (mode) {
+    case "Microphone":
+      modeText = "Listening to the Microphone";
+      break;
+    case "Song":
+      modeText = "Playing the Song";
+      break;
+    case "Uploaded Song":
+      modeText = "Playing the Uploaded Song";
+      break;
+  }
   text(`Mode: ${modeText}`, width / 2, height - 30);
 }
