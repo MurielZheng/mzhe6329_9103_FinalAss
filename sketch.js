@@ -6,6 +6,13 @@ let coordinates = [];
 let size = 1000;
 let radius = size * 0.27;
 
+let song;
+
+function preload() {
+  // Fill in the url for your audio asset
+  song = loadSound("Noel.mp3");
+}
+
 function setup() {
   // Create a canvas with a specified size of 1000x1000
   createCanvas(size, size);
@@ -31,6 +38,13 @@ function setup() {
 }
 
 function draw() {
+    // Give the user a hint on how to interact with the sketch
+    if (getAudioContext().state !== 'running') {
+      background(220);
+      text('tap here to play some sound!', 10, 20, width - 20);
+      // Early exit of the draw loop
+      return;
+    }
   // rotate and translate canvas
   rotate(-PI / 11);
   translate(-350, -100);
@@ -40,6 +54,30 @@ function draw() {
   for (let i = 0; i < coordinates.length; i++) {
     drawCircle(coordinates[i][0], coordinates[i][1], i);
   }
+
+  // Request fresh data from the FFT analysis
+  let spectrum = fft.analyze();
+
+  var bass = fft.getEnergy(100, 150);
+  var treble = fft.getEnergy(150, 250);
+  var mid = fft.getEnergy("mid");
+
+  var mapMid = map(mid, 0, 255, -100, 200);
+  var scaleMid = map(mid, 0, 255, 1, 1.5);
+
+  var mapTreble = map(treble, 0, 255, 200, 350);
+  var scaleTreble = map(treble, 0, 255, 0, 1);
+
+  var mapbass = map(bass, 0, 255, 50, 200);
+  var scalebass = map(bass, 0, 255, 0.05, 1.2);
+
+  mapMouseX = map(mouseX, 0, width, 1, 50);
+  mapMouseXbass = map(mouseX, 0, width, 1, 5);
+  mapMouseY = map(mouseY, 0, height, 2, 6);
+
+  for (let i = 0; i < coordinates.length; i++) {
+    drawCircle(coordinates[i][0], coordinates[i][1], i, mapbass, scaleTreble, mapMid);
+  }
 }
 
 /*
@@ -48,7 +86,7 @@ function draw() {
 * y: the position of the vertical coordinate axis
 * index: index of the current circle in the array
 */
-function drawCircle(x, y, index) {
+function drawCircle(x, y, index, mapMid, scaleTreble, mapMid) {
   push()
   // background circle
   stroke(0, 0, 0, 0)
@@ -62,7 +100,7 @@ function drawCircle(x, y, index) {
     fill(0, 0, 0, 0);
     stroke(colors[index * 10 + i + 1]);
     strokeWeight(10);
-    ellipse(x, y, (i + 1) * 15 + deviations[i], (i + 1) * 15 + + deviations[i + 1])
+    ellipse(x, y, (i + 1) * (15 + mapMid / 20) + deviations[i], (i + 1) * (15 + mapMid / 20) + + deviations[i + 1])
   }
   translate(x, y);
   // Draw the serration line in the middle of every four circles
@@ -72,7 +110,7 @@ function drawCircle(x, y, index) {
     // Draw dashed circle
     for (let i = 0; i < 4; i++) {
       stroke(colors[index * 10 + 10]);
-      dashedCircle(75 + i * (radius - 180) / 5, 2, 4);
+      dashedCircle(75 + i * (radius - 180) / 5 + scaleTreble * 50, 2, 4);
     }
   }
   // Draw the stamen in the middle of every two circles
@@ -157,4 +195,16 @@ function drawPetal(currentRadius) {
   rotate(Math.PI * 2 /90);
   stroke(236, 65, 87);
   bezier(0, 0, -currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius);
+}
+
+// Toggle playback on or off with a mouse click
+function mousePressed() {
+  if (song.isPlaying()) {
+    // .isPlaying() returns a boolean
+    song.stop();
+    background(255, 0, 0);
+  } else {
+    song.play();
+    background(0, 255, 0);
+  }
 }
