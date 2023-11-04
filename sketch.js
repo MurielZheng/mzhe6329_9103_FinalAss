@@ -1,67 +1,69 @@
-// arrays to store colors, deviations, and coordinates, and set the base values of Size and radius
+// Arrays to store various properties for visual elements
 let colors = [];
 let deviations = [];
 let coordinates = [];
-// canvas size
-let size = 1000;
-let radius = size * 0.27;
 
+// Base values for the size of the canvas and the radius for the visual elements
+let size = 1000;
+let radius = size * 0.25;
+
+// The sound track for the visualizer
 let song;
 
+// Predefined color palette for the visual elements
+let palette = [
+  '#69D2E7', '#A7DBD8', '#E0E4CC', '#F38630', '#FA6900',
+  '#FF4E50', '#F9D423', '#EDE574', '#A8E6CF', '#DCEDC1',
+  '#FFD3B6', '#FFAAA5', '#FF8B94', '#F67280', '#355C7D',
+  '#C0D6DF', '#E5FCC2', '#9DE0AD', '#45ADA8', '#547980'
+];
+
+// Function to preload necessary assets
 function preload() {
-  // Fill in the url for your audio asset
-  song = loadSound("Noel.mp3");
+  song = loadSound("Noel.mp3"); // Specify the URL of your audio file
 }
 
+// Setup function to initialize the canvas and FFT object
 function setup() {
-  // Create a canvas with a specified size of 1000x1000
-  createCanvas(size, size);
-  // Create a new FFT analysis object
-  fft = new p5.FFT();
-  // Add the song (sample) into the FFT's input
-  song.connect(fft);
-  // Generate random color array of size 500
+  createCanvas(size, size); // Set up a canvas of 1000x1000 pixels
+  fft = new p5.FFT(); // Create an FFT analysis object
+  song.connect(fft); // Connect the song to the FFT object for analysis
+
+  // Initialize color array with random colors from the palette
   for (let i = 0; i < 500; i++) {
-    let r = random(0, 255);
-    let g = random(0, 255);
-    let b = random(0, 255);
-    //Enter random rgb values into the color array
-    colors.push([r,g,b]);
-    //Enter random rgb values into the deviations array
-    deviations.push(random(-6, 6))
+    let colorIndex = floor(random(palette.length));
+    let col = palette[colorIndex];
+    colors.push(col);
+    deviations.push(random(-6, 6));
   }
-  //Generates a set of coordinates for the circle
+
+  // Generate staggered grid of coordinates for circle placement
   for (let i = 0; i < 6; i++) {
-    //When even numbers are 0, odd numbers are radius / 2. Make a staggered effect.
-    let diff = i % 2 === 0 ? 0 : radius / 2;
+    let diff = i % 2 === 0 ? 0 : radius / 2; // Stagger every other row
     for (let j = 0; j < 6; j++) {
-      //Enter the coordinates of the circle for the loop effect in the coordinate array
-      coordinates.push([radius * j + j * 20 + diff, radius * i - i * 10])
+      coordinates.push([radius * j + j * 20 + diff, radius * i - i * 10]);
     }
   }
 }
 
+// Draw function runs in a loop to render visual elements on canvas
 function draw() {
-    // Give the user a hint on how to interact with the sketch
-    if (getAudioContext().state !== 'running') {
-      background(220);
-      text('tap here to play some sound!', 10, 20, width - 20);
-      // Early exit of the draw loop
-      return;
-    }
-  // rotate and translate canvas
+  // Prompt user to interact if audio context is not running
+  if (getAudioContext().state !== 'running') {
+    background(220);
+    text('Tap here to play sound!', 10, 20, width - 20);
+    return; // Exit the draw loop until interaction begins
+  }
+
+  // Transformation and background setup
   rotate(-PI / 11);
   translate(-350, -100);
-  // Set the background color to a dark blue
-  background(3, 79, 120)
-  // Draw all circle based on coordinates
-  for (let i = 0; i < coordinates.length; i++) {
-    drawCircle(coordinates[i][0], coordinates[i][1], i);
-  }
+  background(3, 79, 120); // Dark blue background
 
-  // Request fresh data from the FFT analysis
+  // Analyze the frequency spectrum of the audio
   let spectrum = fft.analyze();
 
+  // Extract and map frequencies to visual properties
   var bass = fft.getEnergy(100, 150);
   var treble = fft.getEnergy(150, 250);
   var mid = fft.getEnergy("mid");
@@ -75,10 +77,12 @@ function draw() {
   var mapbass = map(bass, 0, 255, 50, 200);
   var scalebass = map(bass, 0, 255, 0.05, 1.2);
 
+  // Mouse position mapping for additional interaction
   mapMouseX = map(mouseX, 0, width, 1, 50);
   mapMouseXbass = map(mouseX, 0, width, 1, 5);
   mapMouseY = map(mouseY, 0, height, 2, 6);
 
+  // Draw each circle according to the grid of coordinates
   for (let i = 0; i < coordinates.length; i++) {
     drawCircle(coordinates[i][0], coordinates[i][1], i, mapbass, scaleTreble, mapMid);
   }
@@ -90,30 +94,38 @@ function draw() {
 * y: the position of the vertical coordinate axis
 * index: index of the current circle in the array
 */
-function drawCircle(x, y, index, mapMid, scaleTreble, mapMid) {
-  push()
+function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
+  push();
+
+  // Use a smoother transition for the circle's size change, with a minimum and maximum size
+  let minDiameter = radius * 0.8;
+  let maxDiameter = radius * 1.5;
+  let bassDiameterChange = map(mapbass, 0, 255, 0, radius * 0.5);
+  let bassDiameter = constrain(minDiameter + bassDiameterChange, minDiameter, maxDiameter);
+
   // background circle
-  stroke(0, 0, 0, 0)
-  fill(colors[index * 10]);
-  circle(x, y, radius);
+  noStroke();
+  fill(color(colors[index % colors.length]));
+  circle(x, y, bassDiameter);
+
   // center circle
-  fill(colors[index * 10 + 1]);
+  fill(color(colors[index * 10 + 1]));
   circle(x, y, 20);
   // outer rings
   for (let i = 0; i < 8; i++) {
     fill(0, 0, 0, 0);
-    stroke(colors[index * 10 + i + 1]);
+    stroke(color(colors[index * 10 + i + 1]));
     strokeWeight(10);
     ellipse(x, y, (i + 1) * (15 + mapMid / 20) + deviations[i], (i + 1) * (15 + mapMid / 20) + + deviations[i + 1])
   }
   translate(x, y);
   // Draw the serration line in the middle of every four circles
   if (index % 4 === 0) {
-    circleLine(colors[index * 10 + 10])
+    circleLine(color (colors[index * 10 + 10]))
   } else {
     // Draw dashed circle
     for (let i = 0; i < 4; i++) {
-      stroke(colors[index * 10 + 10]);
+      stroke(color(colors[index * 10 + 10]));
       dashedCircle(75 + i * (radius - 180) / 5 + scaleTreble * 50, 2, 4);
     }
   }
