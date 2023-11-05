@@ -29,7 +29,7 @@ function preload() {
   song = loadSound("Noel.mp3");
 }
 
-/// Setup function to initialize the canvas and audio analysis tools
+// Setup function to initialize the canvas and audio analysis tools
 function setup() {
   createCanvas(size, size);
   fft = new p5.FFT();
@@ -37,7 +37,7 @@ function setup() {
   mic.start();
   fft.setInput(song);
 
-  /// Populate arrays with random values
+  // Populate arrays with random values
   for (let i = 0; i < 500; i++) {
     colors.push(palette[floor(random(palette.length))]);
     deviations.push(random(-6, 6));
@@ -214,7 +214,7 @@ function drawPetal(currentRadius) {
   bezier(0, 0, -currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius);
 }
 
-/// Function to handle the uploaded file
+// Function to handle the uploaded file
 function handleFile(file) {
   if (file.type === 'audio') {
     if (uploadedSong) {
