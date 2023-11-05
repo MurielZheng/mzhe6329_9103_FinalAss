@@ -1,7 +1,6 @@
 // Base values for the size of the canvas and the radius for the visual elements
 let size = 1000;
 let radius = size * 0.25;
-let canvasHeight = window.innerHeight;
 // The sound track for the visualizer, FFT analysis, and microphone input
 let song, uploadedSong, fft, mic;
 // Input for audio file upload and buttons for audio source selection
@@ -29,7 +28,7 @@ function preload() {
 
 // Setup function to initialize the canvas and audio analysis tools
 function setup() {
-  createCanvas(size, canvasHeight); 
+  createCanvas(size, size);
   fft = new p5.FFT();
   mic = new p5.AudioIn();
   mic.start();
@@ -49,24 +48,22 @@ function setup() {
 
   // Create a file input button for audio files
   fileInput = createFileInput(handleFile);
+  fileInput.position(10, height + 10);
   // Create buttons for audio source interaction
   micButton = createButton('Use Microphone');
+  micButton.position(10, height + 50);
   micButton.mousePressed(enableMic);
 
   defaultSongButton = createButton('Play Default Song');
+  defaultSongButton.position(120, height + 50);
   defaultSongButton.mousePressed(playDefaultSong);
 
   uploadedSongButton = createButton('Play Uploaded Song');
+  uploadedSongButton.position(240, height + 50);
   uploadedSongButton.mousePressed(playUploadedSong);
   // Disable buttons initially
   micButton.attribute('disabled', '');
   uploadedSongButton.attribute('disabled', '');
-
-  // Adjust the button positions based on the new canvas height
-  fileInput.position(10, canvasHeight - 30);
-  micButton.position(10, canvasHeight - 60);
-  defaultSongButton.position(120, canvasHeight - 60);
-  uploadedSongButton.position(240, canvasHeight - 60);
 }
 
 // Render loop for the visuals
