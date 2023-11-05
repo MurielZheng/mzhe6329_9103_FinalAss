@@ -1,16 +1,14 @@
 // Base values for the size of the canvas and the radius for the visual elements
 let size = 1000;
 let radius = size * 0.25;
-
 // The sound track for the visualizer, FFT analysis, and microphone input
 let song, uploadedSong, fft, mic;
-
 // Input for audio file upload and buttons for audio source selection
 let fileInput, micButton, defaultSongButton, uploadedSongButton;
-
 // Current audio source state: 'defaultSong', 'microphone', 'uploadedSong'
 let currentAudioSource = 'defaultSong';
-
+let isUsingMic = false;
+let isUsingUploadedSong = false;
 // Predefined color palette for the visual elements
 const palette = [
   '#69D2E7', '#A7DBD8', '#E0E4CC', '#F38630', '#FA6900',
@@ -71,7 +69,7 @@ function setup() {
 
 // Render loop for the visuals
 function draw() {
-  if (getAudioContext().state !== 'running' || !mic.enabled) {
+  if (getAudioContext().state !== 'running') {
     displayStartInstructions();
     return;
   }
@@ -181,8 +179,8 @@ function displayStartInstructions() {
 
 // Function to draw an individual circle with audio-reactive visual elements
 function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
+  console.log(Math.abs(Math.round(mapMid / 20)))
   push();
-
   // Use a smoother transition for the circle's size change, with a minimum and maximum size
   let minDiameter = radius * 0.75;
   let maxDiameter = radius * 1.5;
@@ -199,7 +197,7 @@ function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
   // outer rings
   for (let i = 0; i < 8; i++) {
     fill(0, 0, 0, 0);
-    stroke(color(colors[index * 10 + i + 1]));
+    stroke(color(colors[index * 10 + i + 1 + Math.abs(Math.round(mapMid / 10))]));
     strokeWeight(10);
     ellipse(x, y, (i + 1) * (15 + mapMid / 20) + deviations[i], (i + 1) * (15 + mapMid / 20) + +deviations[i + 1])
   }
@@ -210,7 +208,7 @@ function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
   } else {
     // Draw dashed circle
     for (let i = 0; i < 4; i++) {
-      stroke(color(colors[index * 10 + 10]));
+      stroke(color(colors[index * 10 + 10 + Math.round(mapbass / 10)]));
       dashedCircle(75 + i * (radius - 180) / 5 + scaleTreble * 30, 2, 4);
     }
   }
