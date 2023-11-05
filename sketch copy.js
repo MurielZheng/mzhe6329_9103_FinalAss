@@ -1,28 +1,28 @@
+// Arrays to store various properties for visual elements
+let colors = [];
+let deviations = [];
+let coordinates = [];
+
 // Base values for the size of the canvas and the radius for the visual elements
 let size = 1000;
 let radius = size * 0.25;
 
-// The sound track for the visualizer, FFT analysis, and microphone input
-let song, uploadedSong, fft, mic;
+// The sound track for the visualizer
+let song;
+let uploadedSong;
+let fft;
+let mic;
 
-// Input for audio file upload and buttons for audio source selection
-let fileInput, micButton, defaultSongButton, uploadedSongButton;
-
-// Current audio source state: 'defaultSong', 'microphone', 'uploadedSong'
-let currentAudioSource = 'defaultSong';
+// Input for audio file upload
+let fileInput;
 
 // Predefined color palette for the visual elements
-const palette = [
+let palette = [
   '#69D2E7', '#A7DBD8', '#E0E4CC', '#F38630', '#FA6900',
   '#FF4E50', '#F9D423', '#EDE574', '#A8E6CF', '#DCEDC1',
   '#FFD3B6', '#FFAAA5', '#FF8B94', '#F67280', '#355C7D',
   '#C0D6DF', '#E5FCC2', '#9DE0AD', '#45ADA8', '#547980'
 ];
-
-// Arrays to store various properties for visual elements
-let colors = Array.from({ length: 500 }, () => palette[Math.floor(Math.random() * palette.length)]);
-let deviations = Array.from({ length: 500 }, () => Math.random() * 12 - 6);
-let coordinates = [];
 
 // Function to preload audio assets
 function preload() {
@@ -36,11 +36,13 @@ function setup() {
   mic = new p5.AudioIn();
   mic.start();
   fft.setInput(song);
+
   // Populate arrays with random values
   for (let i = 0; i < 500; i++) {
     colors.push(palette[floor(random(palette.length))]);
     deviations.push(random(-6, 6));
   }
+
   // Generate grid for visual element placement
   for (let i = 0; i < 6; i++) {
     let diff = i % 2 === 0 ? 0 : radius / 2;
@@ -52,21 +54,6 @@ function setup() {
   // Create a file input button for audio files
   fileInput = createFileInput(handleFile);
   fileInput.position(10, height + 10);
-  // Create buttons for audio source interaction
-  micButton = createButton('Use Microphone');
-  micButton.position(10, height + 50);
-  micButton.mousePressed(enableMic);
-
-  defaultSongButton = createButton('Play Default Song');
-  defaultSongButton.position(120, height + 50);
-  defaultSongButton.mousePressed(playDefaultSong);
-
-  uploadedSongButton = createButton('Play Uploaded Song');
-  uploadedSongButton.position(240, height + 50);
-  uploadedSongButton.mousePressed(playUploadedSong);
-  // Disable buttons initially
-  micButton.attribute('disabled', '');
-  uploadedSongButton.attribute('disabled', '');
 }
 
 // Render loop for the visuals
@@ -75,6 +62,7 @@ function draw() {
     displayStartInstructions();
     return;
   }
+
   if (song.isPlaying()) {
     background(3, 79, 129); // Playing background color
   } else {
@@ -104,59 +92,6 @@ function draw() {
   }
 }
 
-// Enable the microphone as the audio source
-function enableMic() {
-  if (uploadedSong) {
-    uploadedSong.stop();
-  }
-  song.stop();
-  mic.start();
-  fft.setInput(mic);
-  isUsingMic = true;
-  isUsingUploadedSong = false;
-  displayPlaybackMode("Microphone", true);
-}
-
-// Play the default song
-function playDefaultSong() {
-  if (uploadedSong) {
-    uploadedSong.stop();
-  }
-  mic.stop();
-  song.play();
-  fft.setInput(song);
-  isUsingMic = false;
-  isUsingUploadedSong = false;
-  displayPlaybackMode("Default Song", true);
-}
-
-// Play the uploaded song
-function playUploadedSong() {
-  if (uploadedSong) {
-    mic.stop();
-    song.stop();
-    uploadedSong.play();
-    fft.setInput(uploadedSong);
-    isUsingMic = false;
-    isUsingUploadedSong = true;
-    displayPlaybackMode("Uploaded Song", true);
-  } else {
-    console.error("No song uploaded.");
-  }
-}
-
-// Adjust the mousePressed function to accommodate the uploaded audio and mic input
-function mousePressed() {
-  if (!isUsingMic && !isUsingUploadedSong) {
-    // Toggles default song playback
-    if (song.isPlaying()) {
-      song.stop();
-    } else {
-      song.play();
-    }
-  }
-}
-
 // Display instructions to start audio
 function displayStartInstructions() {
   background(50);
@@ -168,15 +103,6 @@ function displayStartInstructions() {
   text('The visualizer will react to the music!', width / 2, height / 2);
   textSize(12);
   text('(Ensure "Noel.mp3" is in the project directory)', width / 2, height / 2 + 20);
-
-  // Add interaction text based on the state
-  if (isUsingMic) {
-    text('Microphone is enabled. Start making some noise!', width / 2, height / 2 + 40);
-  } else if (isUsingUploadedSong) {
-    text('Play an uploaded song by selecting a file.', width / 2, height / 2 + 40);
-  } else {
-    text('Click to start the default song.', width / 2, height / 2 + 40);
-  }
 }
 
 // Function to draw an individual circle with audio-reactive visual elements
@@ -193,6 +119,7 @@ function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
   noStroke();
   fill(color(colors[index % colors.length]));
   circle(x, y, bassDiameter);
+
   // center circle
   fill(color(colors[index * 10 + 1]));
   circle(x, y, 20);
@@ -201,12 +128,12 @@ function drawCircle(x, y, index, mapbass, scaleTreble, mapMid) {
     fill(0, 0, 0, 0);
     stroke(color(colors[index * 10 + i + 1]));
     strokeWeight(10);
-    ellipse(x, y, (i + 1) * (15 + mapMid / 20) + deviations[i], (i + 1) * (15 + mapMid / 20) + +deviations[i + 1])
+    ellipse(x, y, (i + 1) * (15 + mapMid / 20) + deviations[i], (i + 1) * (15 + mapMid / 20) + + deviations[i + 1])
   }
   translate(x, y);
   // Draw the serration line in the middle of every four circles
   if (index % 4 === 0) {
-    circleLine(color(colors[index * 10 + 10]))
+    circleLine(color (colors[index * 10 + 10]))
   } else {
     // Draw dashed circle
     for (let i = 0; i < 4; i++) {
@@ -229,23 +156,23 @@ function dashedCircle(radius, dashWidth, dashSpacing) {
   let dashPeriod = dashWidth + dashSpacing;
   let lastDashed = false;
   // Draw all segments
-  for (let i = 0; i < steps; i++) {
+  for(let i = 0; i < steps; i++) {
     // Decide whether to beginShape or endShape
     let curDashed = (i % dashPeriod) < dashWidth;
-    if (curDashed && !lastDashed) {
+    if(curDashed && !lastDashed) {
       beginShape();
     }
-    if (!curDashed && lastDashed) {
+    if(!curDashed && lastDashed) {
       endShape();
     }
     // Draw vertex by calculate result
-    if (curDashed) {
+    if(curDashed) {
       let theta = map(i, 0, steps, 0, TWO_PI);
       vertex(cos(theta) * radius, sin(theta) * radius);
     }
     lastDashed = curDashed;
   }
-  if (lastDashed) {
+  if(lastDashed) {
     endShape();
   }
 }
@@ -255,12 +182,8 @@ function circleLine(color) {
   stroke(color)
   strokeWeight(3);
   // initialize small/large circle points array
-  let smallCirclePoints = [
-    [65, 0]
-  ];
-  let largeCirclePoints = [
-    [132, 0]
-  ];
+  let smallCirclePoints = [[65, 0]];
+  let largeCirclePoints = [[132, 0]];
   let angle = Math.PI * 2 / 30;
   // add 30 new point to small circle points array
   for (let i = 0; i <= 30; i++) {
@@ -286,22 +209,57 @@ function drawPetal(currentRadius) {
   noFill();
   bezier(0, 0, -currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius);
   // rotate and draw another bezier line by calc result
-  rotate(Math.PI * 2 / 90);
+  rotate(Math.PI * 2 /90);
   stroke(236, 65, 87);
   bezier(0, 0, -currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius);
 }
 
-// Function to handle the uploaded file, modified to enable the uploadedSongButton
+// Function to handle the uploaded file
 function handleFile(file) {
   if (file.type === 'audio') {
     if (uploadedSong) {
       uploadedSong.stop();
     }
     uploadedSong = loadSound(file.data, () => {
-      uploadedSongButton.removeAttribute('disabled');
+      if (song.isPlaying()) {
+        song.stop();
+      }
+      mic.stop();
+      uploadedSong.play();
+      fft.setInput(uploadedSong);
     });
   } else {
     console.error("This file type is not supported.");
+  }
+}
+
+// Adjust the mousePressed function to accommodate the uploaded audio
+function mousePressed() {
+  if (song.isPlaying()) {
+    song.stop();
+    mic.start();
+    fft.setInput(mic);
+    displayPlaybackMode("Microphone", false);
+  } else if (uploadedSong && uploadedSong.isPlaying()) {
+    uploadedSong.stop();
+    mic.start();
+    fft.setInput(mic);
+    displayPlaybackMode("Microphone", false);
+  } else {
+    if (getAudioContext().state !== 'running') {
+      userStartAudio();
+    }
+    if (uploadedSong) {
+      mic.stop();
+      uploadedSong.play();
+      fft.setInput(uploadedSong);
+      displayPlaybackMode("Uploaded Song", true);
+    } else {
+      mic.stop();
+      song.play();
+      fft.setInput(song);
+      displayPlaybackMode("Song", true);
+    }
   }
 }
 
@@ -310,6 +268,10 @@ function displayPlaybackMode(mode, isPlaying) {
   // Set background color based on whether the song is playing
   let bgColor = isPlaying ? [3, 79, 129] : [50, 50, 50];
   background(bgColor);
+  textFont("Lato");
+  fill(255); // White text for visibility
+  textSize(17);
+  textAlign(CENTER, BOTTOM);
   let modeText;
   switch (mode) {
     case "Microphone":
@@ -323,18 +285,4 @@ function displayPlaybackMode(mode, isPlaying) {
       break;
   }
   text(`Mode: ${modeText}`, width / 2, height - 30);
-  // Update button states based on the current mode
-  if (mode === "Microphone") {
-    micButton.attribute('disabled', '');
-    defaultSongButton.removeAttribute('disabled');
-    uploadedSongButton.removeAttribute('disabled');
-  } else if (mode === "Default Song") {
-    micButton.removeAttribute('disabled');
-    defaultSongButton.attribute('disabled', '');
-    uploadedSongButton.removeAttribute('disabled');
-  } else if (mode === "Uploaded Song") {
-    micButton.removeAttribute('disabled');
-    defaultSongButton.removeAttribute('disabled');
-    uploadedSongButton.attribute('disabled', '');
-  }
 }
