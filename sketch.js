@@ -18,16 +18,16 @@ const palette = [
   '#C0D6DF', '#E5FCC2', '#9DE0AD', '#45ADA8', '#547980'
 ];
 // Arrays to store various properties for visual elements
-let colors = Array.from({ length: 500 }, () => palette[Math.floor(Math.random() * palette.length)]);
-let deviations = Array.from({ length: 500 }, () => Math.random() * 12 - 6);
-let coordinates = [];
+let colors = []; // Stores colors for circles
+let deviations = []; // Stores deviations for circle placement
+let coordinates = []; // Stores x,y coordinates for circle placement
 
-// Function to preload audio assets
+// Preload the default song
 function preload() {
-  song = loadSound("Noel.mp3");
+  song = loadSound("assets/Noel.mp3");
 }
 
-// Setup function to initialize the canvas and audio analysis tools
+// Set up the canvas, audio analysis tools, and UI elements
 function setup() {
   createCanvas(size, canvasHeight); 
   fft = new p5.FFT();
@@ -52,10 +52,8 @@ function setup() {
   // Create buttons for audio source interaction
   micButton = createButton('Use Microphone');
   micButton.mousePressed(enableMic);
-
   defaultSongButton = createButton('Play Default Song');
   defaultSongButton.mousePressed(playDefaultSong);
-
   uploadedSongButton = createButton('Play Uploaded Song');
   uploadedSongButton.mousePressed(playUploadedSong);
   // Disable buttons initially
@@ -65,43 +63,8 @@ function setup() {
   // Adjust the button positions based on the new canvas height
   fileInput.position(10, canvasHeight - 30);
   micButton.position(10, canvasHeight - 60);
-  defaultSongButton.position(120, canvasHeight - 60);
-  uploadedSongButton.position(240, canvasHeight - 60);
-}
-
-// Render loop for the visuals
-function draw() {
-  if (getAudioContext().state !== 'running') {
-    displayStartInstructions();
-    return;
-  }
-  if (song.isPlaying()) {
-    background(3, 79, 129); // Playing background color
-  } else {
-    background(50); // Paused background color
-  }
-
-  // Rotate and translate for visual transformation
-  rotate(-PI / 11);
-  translate(-350, -100);
-
-  let spectrum = fft.analyze();
-  let bass = fft.getEnergy(100, 150);
-  let treble = fft.getEnergy(150, 250);
-  let mid = fft.getEnergy("mid");
-
-  // Map frequency energies to visual properties
-  let mapMid = map(mid, 0, 255, -100, 200);
-  let scaleMid = map(mid, 0, 255, 1, 1.5);
-  let mapTreble = map(treble, 0, 255, 200, 350);
-  let scaleTreble = map(treble, 0, 255, 0, 1);
-  let mapBass = map(bass, 0, 255, 50, 200);
-  let scaleBass = map(bass, 0, 255, 0.05, 1.2);
-
-  // Draw circles influenced by the audio
-  for (let i = 0; i < coordinates.length; i++) {
-    drawCircle(coordinates[i][0], coordinates[i][1], i, mapBass, scaleTreble, mapMid);
-  }
+  defaultSongButton.position(125, canvasHeight - 60);
+  uploadedSongButton.position(250, canvasHeight - 60);
 }
 
 // Enable the microphone as the audio source
@@ -145,7 +108,7 @@ function playUploadedSong() {
   }
 }
 
-// Adjust the mousePressed function to accommodate the uploaded audio and mic input
+// Handle mousePressed for toggling default song playback
 function mousePressed() {
   if (!isUsingMic && !isUsingUploadedSong) {
     // Toggles default song playback
@@ -157,7 +120,7 @@ function mousePressed() {
   }
 }
 
-// Display instructions to start audio
+// Display start instructions on the canvas
 function displayStartInstructions() {
   background(50);
   fill(255);
@@ -176,6 +139,89 @@ function displayStartInstructions() {
     text('Play an uploaded song by selecting a file.', width / 2, height / 2 + 40);
   } else {
     text('Click to start the default song.', width / 2, height / 2 + 40);
+  }
+}
+
+// Function to handle the uploaded file, modified to enable the uploadedSongButton
+function handleFile(file) {
+  if (file.type === 'audio') {
+    if (uploadedSong) {
+      uploadedSong.stop();
+    }
+    uploadedSong = loadSound(file.data, () => {
+      uploadedSongButton.removeAttribute('disabled');
+    });
+  } else {
+    console.error("This file type is not supported.");
+  }
+}
+
+// Function to display the current playback mode on the canvas
+function displayPlaybackMode(mode, isPlaying) {
+  // Set background color based on whether the song is playing
+  let bgColor = isPlaying ? [3, 79, 129] : [50, 50, 50];
+  background(bgColor);
+  let modeText;
+  switch (mode) {
+    case "Microphone":
+      modeText = "Listening to the Microphone";
+      break;
+    case "Song":
+      modeText = "Playing the Song";
+      break;
+    case "Uploaded Song":
+      modeText = "Playing the Uploaded Song";
+      break;
+  }
+  text(`Mode: ${modeText}`, width / 2, height - 30);
+  // Update button states based on the current mode
+  if (mode === "Microphone") {
+    micButton.attribute('disabled', '');
+    defaultSongButton.removeAttribute('disabled');
+    uploadedSongButton.removeAttribute('disabled');
+  } else if (mode === "Default Song") {
+    micButton.removeAttribute('disabled');
+    defaultSongButton.attribute('disabled', '');
+    uploadedSongButton.removeAttribute('disabled');
+  } else if (mode === "Uploaded Song") {
+    micButton.removeAttribute('disabled');
+    defaultSongButton.removeAttribute('disabled');
+    uploadedSongButton.attribute('disabled', '');
+  }
+}
+
+// Render loop for the visuals
+function draw() {
+  if (getAudioContext().state !== 'running') {
+    displayStartInstructions();
+    return;
+  }
+  if (song.isPlaying()) {
+    background(3, 79, 129); // Playing background color
+  } else {
+    background(50); // Paused background color
+  }
+
+  // Rotate and translate for visual transformation
+  rotate(-PI / 11);
+  translate(-350, -100);
+
+  let spectrum = fft.analyze();
+  let bass = fft.getEnergy(100, 150);
+  let treble = fft.getEnergy(150, 250);
+  let mid = fft.getEnergy("mid");
+
+  // Map frequency energies to visual properties
+  let mapMid = map(mid, 0, 255, -100, 200);
+  let scaleMid = map(mid, 0, 255, 1, 1.5);
+  let mapTreble = map(treble, 0, 255, 200, 350);
+  let scaleTreble = map(treble, 0, 255, 0, 1);
+  let mapBass = map(bass, 0, 255, 50, 200);
+  let scaleBass = map(bass, 0, 255, 0.05, 1.2);
+
+  // Draw circles influenced by the audio
+  for (let i = 0; i < coordinates.length; i++) {
+    drawCircle(coordinates[i][0], coordinates[i][1], i, mapBass, scaleTreble, mapMid);
   }
 }
 
@@ -289,52 +335,4 @@ function drawPetal(currentRadius) {
   rotate(Math.PI * 2 / 90);
   stroke(236, 65, 87);
   bezier(0, 0, -currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius, currentRadius / ratio, currentRadius);
-}
-
-// Function to handle the uploaded file, modified to enable the uploadedSongButton
-function handleFile(file) {
-  if (file.type === 'audio') {
-    if (uploadedSong) {
-      uploadedSong.stop();
-    }
-    uploadedSong = loadSound(file.data, () => {
-      uploadedSongButton.removeAttribute('disabled');
-    });
-  } else {
-    console.error("This file type is not supported.");
-  }
-}
-
-// Function to display the current playback mode on the canvas
-function displayPlaybackMode(mode, isPlaying) {
-  // Set background color based on whether the song is playing
-  let bgColor = isPlaying ? [3, 79, 129] : [50, 50, 50];
-  background(bgColor);
-  let modeText;
-  switch (mode) {
-    case "Microphone":
-      modeText = "Listening to the Microphone";
-      break;
-    case "Song":
-      modeText = "Playing the Song";
-      break;
-    case "Uploaded Song":
-      modeText = "Playing the Uploaded Song";
-      break;
-  }
-  text(`Mode: ${modeText}`, width / 2, height - 30);
-  // Update button states based on the current mode
-  if (mode === "Microphone") {
-    micButton.attribute('disabled', '');
-    defaultSongButton.removeAttribute('disabled');
-    uploadedSongButton.removeAttribute('disabled');
-  } else if (mode === "Default Song") {
-    micButton.removeAttribute('disabled');
-    defaultSongButton.attribute('disabled', '');
-    uploadedSongButton.removeAttribute('disabled');
-  } else if (mode === "Uploaded Song") {
-    micButton.removeAttribute('disabled');
-    defaultSongButton.removeAttribute('disabled');
-    uploadedSongButton.attribute('disabled', '');
-  }
 }
