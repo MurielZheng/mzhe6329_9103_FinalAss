@@ -24,12 +24,12 @@ let coordinates = []; // Stores x,y coordinates for circle placement
 
 // Preload the default song
 function preload() {
-  song = loadSound("assets/Noel.mp3");
+  song = loadSound("assets/DEMO-fallin flower.mp3");
 }
 
 // Set up the canvas, audio analysis tools, and UI elements
 function setup() {
-  createCanvas(size, canvasHeight); 
+  createCanvas(size, canvasHeight);
   fft = new p5.FFT();
   mic = new p5.AudioIn();
   mic.start();
@@ -46,7 +46,6 @@ function setup() {
       coordinates.push([radius * j + j * 20 + diff, radius * i - i * 10]);
     }
   }
-
   // Create a file input button for audio files
   fileInput = createFileInput(handleFile);
   // Create buttons for audio source interaction
@@ -59,7 +58,6 @@ function setup() {
   // Disable buttons initially
   micButton.attribute('disabled', '');
   uploadedSongButton.attribute('disabled', '');
-
   // Adjust the button positions based on the new canvas height
   fileInput.position(10, canvasHeight - 30);
   micButton.position(10, canvasHeight - 60);
@@ -130,7 +128,7 @@ function displayStartInstructions() {
   textSize(16);
   text('The visualizer will react to the music!', width / 2, height / 2);
   textSize(12);
-  text('(Ensure "Noel.mp3" is in the project directory)', width / 2, height / 2 + 20);
+  text('(Ensure "DEMO-fallin flower.mp3" is in the project directory)', width / 2, height / 2 + 20);
 
   // Add interaction text based on the state
   if (isUsingMic) {
@@ -205,7 +203,6 @@ function draw() {
   // Rotate and translate for visual transformation
   rotate(-PI / 11);
   translate(-350, -100);
-
   let spectrum = fft.analyze();
   let bass = fft.getEnergy(100, 150);
   let treble = fft.getEnergy(150, 250);

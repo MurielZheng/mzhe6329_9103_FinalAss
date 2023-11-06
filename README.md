@@ -1,5 +1,10 @@
 # mzhe6329_9103_FinalAss
-The default song - "Noel" is pruduced and composed by Muriel Zheng.
+The default song - "DEMO-fallin flower" is covered and composed by Muriel Zheng.
+The Original song's info is provided as below:
+Title     : 舞い落ちる花びら（Fallin' Flower)
+Artist   : SEVENTEEN
+Album : SEVENTEEN JAPAN 2ND SINGLE [ 舞い落ちる花びら（Fallin' Flower) ]
+
 
 # Audio Visualizer
 
